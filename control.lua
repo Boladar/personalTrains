@@ -14,6 +14,14 @@ function add_commands()
         game.print(get_nearest_stop(game.get_player(t.player_index)).unit_number)
     end)
 
+    commands.add_command("callTrain","calls train",function(t)
+        game.print(t.parameter)
+        local train_id = tonumber(t.parameter)
+        local nearest_stop = get_nearest_stop(game.get_player(t.player_index))
+
+        call_train(nearest_stop,train_id)
+    end)
+
 end
 
 script.on_init(function()
@@ -61,7 +69,7 @@ end
 
 function print_personal_trains(personal_trains)
     for key,value in pairs(personal_trains) do
-        game.print(string.format( "<%d> --> '<%d>'", key,value.id ))
+        game.print(string.format( "%d --> %d", key,value.id ))
     end
 end
 
@@ -80,10 +88,42 @@ function get_nearest_stop(player)
     return nearest_stop
 end
 
+function call_train(stop,train_id)
+
+    local personal_trains = get_personal_trains()
+    local train = personal_trains[train_id]
+
+    if train == nil then
+        game.print(string.format("train nill of %d",train_id))
+        return
+    end
+
+    train.schedule = nil
+
+    new_schedule = {
+        current = 1,
+        records = {
+            {
+                station = stop.backer_name,
+                wait_conditions = {
+                    {
+                        type = "empty",
+                        compare_type = "or",
+                    }
+                }
+            }
+        }
+    }
+
+    train.schedule = new_schedule
+    train.manual_mode = false
+
+end
+
 script.on_event(defines.events.on_built_entity,function(event) 
     
     if event.created_entity.name == 'personal-train-stop' then
-        table.insert(global.personalStops,event.created_entity)
+        table.insert(global.personalStops,event.created_entity.unit_number,event.created_entity)
     end
 
     if event.created_entity.name == 'personal-train' then
